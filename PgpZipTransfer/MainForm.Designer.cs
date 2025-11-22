@@ -9,6 +9,7 @@ public partial class MainForm : Form
     private ProgressBar progressBar;
     private Label lblStatus;
     private Button btnDecrypt;
+    private Button btnCancel;
 
     private void InitializeComponent()
     {
@@ -18,6 +19,7 @@ public partial class MainForm : Form
         btnStart = new Button();
         progressBar = new ProgressBar();
         btnDecrypt = new Button();
+        btnCancel = new Button();
         lblStatus = new Label();
         SuspendLayout();
         // 
@@ -71,9 +73,18 @@ public partial class MainForm : Form
         btnDecrypt.Text = "Decrypt";
         btnDecrypt.Click += btnDecrypt_Click;
         // 
+        // btnCancel
+        // 
+        btnCancel.Location = new Point(108, 100);
+        btnCancel.Name = "btnCancel";
+        btnCancel.Size = new Size(90, 25);
+        btnCancel.TabIndex = 7;
+        btnCancel.Text = "Cancel";
+        btnCancel.Click += btnCancel_Click;
+        // 
         // lblStatus
         // 
-        lblStatus.Location = new Point(120, 100);
+        lblStatus.Location = new Point(204, 100);
         lblStatus.Name = "lblStatus";
         lblStatus.Size = new Size(768, 23);
         lblStatus.TabIndex = 0;
@@ -86,6 +97,7 @@ public partial class MainForm : Form
         ClientSize = new Size(792, 150);
         Controls.Add(lblStatus);
         Controls.Add(btnDecrypt);
+        Controls.Add(btnCancel);
         Controls.Add(progressBar);
         Controls.Add(btnStart);
         Controls.Add(btnConfigure);

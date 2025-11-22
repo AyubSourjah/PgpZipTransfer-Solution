@@ -1,11 +1,14 @@
 using PgpZipTransfer.Models;
 using Org.BouncyCastle.Bcpg.OpenPgp;
+using PgpZipTransfer.Services;
 
 namespace PgpZipTransfer;
 
 public partial class DecryptForm : Form
 {
     private readonly AppSettings _settings;
+    private readonly LoggingService _logger = new();
+    private CancellationTokenSource? _cts;
 
     public DecryptForm(AppSettings settings)
     {
@@ -40,28 +43,40 @@ public partial class DecryptForm : Form
         btnDecrypt.Enabled = false;
         progressBar.Value = 0;
         lblStatus.Text = "Decrypting...";
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+        _logger.LogInfo($"Starting decryption of {encPath}");
 
         try
         {
             var outDir = Path.Combine(Path.GetDirectoryName(encPath)!, "decrypted");
             Directory.CreateDirectory(outDir);
             var outFile = Path.Combine(outDir, Path.GetFileNameWithoutExtension(encPath));
-            await Task.Run(() => Decrypt(encPath, outFile, _settings.PrivateKeyPath!, _settings.Passphrase!));
+            await Task.Run(() => Decrypt(encPath, outFile, _settings.PrivateKeyPath!, _settings.Passphrase!, token));
             progressBar.Value = 100;
             lblStatus.Text = "Done";
             try { System.Diagnostics.Process.Start("explorer.exe", outDir); } catch { }
+            _logger.LogInfo("Decryption finished");
+        }
+        catch (OperationCanceledException)
+        {
+            lblStatus.Text = "Cancelled";
+            _logger.LogInfo("Decryption cancelled by user");
         }
         catch (Exception ex)
         {
             MessageBox.Show("Error: " + ex.Message);
+            _logger.LogError(ex.ToString());
         }
         finally
         {
             btnDecrypt.Enabled = true;
+            _cts?.Dispose();
+            _cts = null;
         }
     }
 
-    private void Decrypt(string inputFile, string outputFile, string secretKeyPath, string passphrase)
+    private void Decrypt(string inputFile, string outputFile, string secretKeyPath, string passphrase, CancellationToken token)
     {
         using var fs = File.OpenRead(inputFile);
         using var keyIn = File.OpenRead(secretKeyPath);
@@ -101,6 +116,7 @@ public partial class DecryptForm : Form
                 using var outFile = File.Create(outputFile);
                 using var inLit = lit.GetInputStream();
                 inLit.CopyTo(outFile);
+                token.ThrowIfCancellationRequested();
             }
             else
             {

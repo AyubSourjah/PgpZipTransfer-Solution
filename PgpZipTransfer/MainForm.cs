@@ -10,6 +10,8 @@ public partial class MainForm : Form
     private AppSettings _settings = new();
     private readonly ZipService _zipService = new();
     private readonly PgpEncryptionService _pgpService = new();
+    private readonly LoggingService _logger = new();
+    private CancellationTokenSource? _cts;
 
     public MainForm()
     {
@@ -64,6 +66,10 @@ public partial class MainForm : Form
         progressBar.Value = 0;
         lblStatus.Text = "Zipping files...";
         ToggleUi(false);
+        _cts = new CancellationTokenSource();
+        btnCancel.Enabled = true;
+        var token = _cts.Token;
+        _logger.LogInfo("Process started");
 
         try
         {
@@ -84,23 +90,34 @@ public partial class MainForm : Form
 
             await Task.Run(async () =>
             {
-                await _zipService.ZipFolderAsync(source, zipPath, f => !f.StartsWith(output, StringComparison.OrdinalIgnoreCase), zipProgress);
+                await _zipService.ZipFolderAsync(source, zipPath, f => !f.StartsWith(output, StringComparison.OrdinalIgnoreCase), zipProgress, token, _logger);
                 overallProgress.Report(80);
+                if (token.IsCancellationRequested) return;
                 lblStatus.Invoke(() => lblStatus.Text = "Encrypting...");
-                await _pgpService.EncryptAndSignAsync(zipPath, pgpPath, _settings.PublicKeyPath!, _settings.PrivateKeyPath, _settings.Passphrase, encryptProgress);
+                await _pgpService.EncryptAndSignAsync(zipPath, pgpPath, _settings.PublicKeyPath!, _settings.PrivateKeyPath, _settings.Passphrase, encryptProgress, token, _logger);
             });
 
             progressBar.Value = 100;
             lblStatus.Text = "Completed";
             try { System.Diagnostics.Process.Start("explorer.exe", output); } catch { }
+            _logger.LogInfo("Process completed successfully");
+        }
+        catch (OperationCanceledException)
+        {
+            lblStatus.Text = "Cancelled";
+            _logger.LogInfo("Process cancelled by user");
         }
         catch (Exception ex)
         {
             MessageBox.Show("Error: " + ex.Message);
+            _logger.LogError(ex.ToString());
         }
         finally
         {
             ToggleUi(true);
+            btnCancel.Enabled = false;
+            _cts?.Dispose();
+            _cts = null;
         }
     }
 
@@ -115,5 +132,10 @@ public partial class MainForm : Form
     {
         using var f = new DecryptForm(_settings);
         f.ShowDialog(this);
+    }
+
+    private void btnCancel_Click(object sender, EventArgs e)
+    {
+        _cts?.Cancel();
     }
 }

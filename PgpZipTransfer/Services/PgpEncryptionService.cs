@@ -5,11 +5,12 @@ namespace PgpZipTransfer.Services;
 
 public class PgpEncryptionService
 {
-    public async Task EncryptAndSignAsync(string inputFile, string outputFile, string publicKeyPath, string? privateKeyPath, string? passphrase, IProgress<int>? progress)
+    public async Task EncryptAndSignAsync(string inputFile, string outputFile, string publicKeyPath, string? privateKeyPath, string? passphrase, IProgress<int>? progress, CancellationToken token, LoggingService logger)
     {
         progress?.Report(0);
         using var publicKeyStream = File.OpenRead(publicKeyPath);
         var pubKey = ReadPublicKey(publicKeyStream);
+        logger.LogInfo($"Starting encryption of {inputFile} to {outputFile}");
 
         PgpSecretKey? secretKey = null;
         PgpPrivateKey? privateKey = null;
@@ -51,9 +52,10 @@ public class PgpEncryptionService
         int read;
         long total = fIn.Length;
         long done = 0;
-        while ((read = await fIn.ReadAsync(buf.AsMemory(0, buf.Length))) > 0)
+        while ((read = await fIn.ReadAsync(buf.AsMemory(0, buf.Length), token)) > 0)
         {
-            await pOut.WriteAsync(buf.AsMemory(0, read));
+            token.ThrowIfCancellationRequested();
+            await pOut.WriteAsync(buf.AsMemory(0, read), token);
             done += read;
             progress?.Report(total == 0 ? 100 : (int)(done * 100 / total));
             if (sGen != null)
@@ -66,6 +68,7 @@ public class PgpEncryptionService
             sGen.Generate().Encode(compOut);
         }
         progress?.Report(100);
+        logger.LogInfo("Encryption finished successfully");
     }
 
     private PgpPublicKey ReadPublicKey(Stream input)

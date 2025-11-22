@@ -86,13 +86,7 @@ If both `PrivateKeyPath` and `Passphrase` are supplied and the secret key contai
 
 ## Extensibility Suggestions
 - Add file filters (extensions, size limits).
-- Add logging (e.g., to `%AppData%/PgpZipTransfer/log.txt`).
 - Add decryption/verification feature.
-- Add cancellation token to stop long operations.
-
-## Security Considerations
-- Passphrase is stored in plain JSON today (not secure). For production encrypt or protect it (DPAPI, Windows Credential Manager, etc.).
-- Output folder permissions should be restricted if sensitive data is processed.
 
 ## Uninstall / Cleanup
 Delete:
