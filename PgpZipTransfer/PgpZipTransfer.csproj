@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>PgpZipTransfer.snk</AssemblyOriginatorKeyFile>
+    <Company>hSenid Business Solutions PLC</Company>
+    <Product>PeoplesHR</Product>
+    <Description>Implementation assistance tool to be used for internal purposes only</Description>
+    <Copyright>2025</Copyright>
+    <AssemblyVersion>8.0.0.2</AssemblyVersion>
+    <FileVersion>8.0.0.2</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+  </ItemGroup>
+
+</Project>
